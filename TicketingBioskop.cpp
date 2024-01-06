@@ -3,22 +3,27 @@
 #include <iomanip>
 #include <windows.h>
 #include <sstream>
+#include <queue>
+#include <stack>
 
 using namespace std;
 
 HANDLE h= GetStdHandle(STD_OUTPUT_HANDLE);
 
-
-//stack
-struct stack{
-	int atas[6];
-} tumpuk;
+struct Movie{
+	char kode;
+	string jam;
+	int harga;
+	string judul;
+	string teks;
+};
+stack<Movie> movieStack;
 
 //data film
 #define kursi_max 120
 typedef struct data_film{
 	char kode;
-	string jam, judul, ruang, teks;
+	string jam,judul,ruang;
 	int harga, total_kursi;
 	long int total_pendapatan;
 	struct data_kursi{
@@ -32,17 +37,17 @@ long int total=0;
 
 //data pembelian
 typedef struct pembelian_tiket{
-	char nama[60], kode;
-	int jenis_tiket, jumlah_tiket;
+	string nama, kode;
+	int jumlah_tiket;
 	long int harga_tiket, total_harga;
 	string judul, ruang, jam, nomor_kursi[kursi_max];
 } data_pembelian;
 
+queue<data_pembelian> pembelian_queue;
 data_pembelian beli[kursi_max*6];
-char nama[60];
 
 //deklarasi variabel umum
-int i, d=0, pilihan_menu, pilihan_kategori, pilihan_laporan;
+int i, d=0, pilihan_menu;
 char pilihan_film;
 
 
@@ -56,37 +61,18 @@ void pilih_kursi();			//Pilih kursi
 void riwayat_penjualan();	//laporan riwayat penjualan
 void penjualan_film();		//laporan penjualan per film
 
-void hal_utama();	//[0] Halaman Utama
-void pembelian();	//[1] Halaman Pembelian
-void cek_kursi();	//[2] Halaman Cek Sisa Kursi
-void laporan();		//[3] Halaman Laporan
+void hal_utama();		//[0] Halaman Utama
+void pembelian();		//[1] Halaman Pembelian
+void cek_kursi();		//[2] Halaman Cek Sisa Kursi
+void queue_pembelian();	//[4] Halaman Antrian Pembelian
+void daftarfilm();			//[3] Halaman Daftarfilm
+
 
 
 //=============================================== PROGRAM UTAMA =======================================================
 
 //PROGRAM UTAMA
 int main(){
-	for(i=0; i<6; i++){
-		tumpuk.atas[i]=-1;
-		film[i].total_kursi=0;
-	}
-	
-	//isi data film
-	film[0].kode='A'; film[0].jam="18:15"; film[0].harga=20000; film[0].teks="         NUSSA         "; film[0].judul="Nussa";
-	film[1].kode='B'; film[1].jam="19:30"; film[1].harga=20000; film[1].teks="      UPIN & IPIN      "; film[1].judul="Upin & Ipin";
-	film[2].kode='C'; film[2].jam="20:30"; film[2].harga=20000; film[2].teks="      TOM & JERRY      "; film[2].judul="Tom & Jerry";
-	film[3].kode='D'; film[3].jam="18:15"; film[3].harga=35000; film[3].teks="SPIDERMAN : NO WAY HOME"; film[3].judul="Spiderman: No Way Home";
-	film[4].kode='E'; film[4].jam="19:30"; film[4].harga=35000; film[4].teks="     THE ICE ROAD      "; film[4].judul="The Ice Road";
-	film[5].kode='F'; film[5].jam="20:30"; film[5].harga=35000; film[5].teks="     RESIDENT EVIL     "; film[5].judul="Resident Evil";
-	
-	for(int i=0; i<6; i++){
-		if(i<3){
-			film[i].ruang="Cinema 1";
-		}
-		else if(i>=3 && i<6){
-			film[i].ruang="Cinema 2";
-		}
-	}
 	
 	kursi(); //isi data nomor kursi
 	
@@ -96,17 +82,29 @@ int main(){
 		switch(pilihan_menu){
 			case 1:
 				system("cls");
-				pembelian();
+				daftarfilm();
 				break;
 			case 2:
 				system("cls");
-				cek_kursi();
+				pembelian();
 				break;
 			case 3:
 				system("cls");
-				laporan();
+				cek_kursi();
 				break;
 			case 4:
+				system("cls");
+				queue_pembelian();
+				break;
+			case 5:
+				system("cls");
+				riwayat_penjualan();
+				break;
+			case 6:
+				system("cls");
+				penjualan_film();
+				break;
+			case 7:
 				cout<<endl;
 				cout<<"\t------------------------------------------------------------------"<<endl;
 				cout<<endl;
@@ -115,11 +113,45 @@ int main(){
 				break;
 			}
 		}
-	while(pilihan_menu>=1 && pilihan_menu<=3);
-}
+	while(pilihan_menu>=1 && pilihan_menu<=6);
+}	
+	
 
 
 //============================================= DEFINISI FUNGSI-FUNGSI =========================================================
+
+void displayMovie(Movie* movie) {
+    cout<<"\t| ["<<movie->kode<<"]  |"<<"   "<<movie->judul<<"  |"<<"\t  "<<movie->jam<<" WIB"<<"\t|   Rp "<<movie->harga<<"\t|"<<endl;
+}
+
+void daftarfilm(){
+	
+	//isi daftar dengan Stack
+	movieStack.push({'F',"20:30",35000,"MISSION IMPOSSIBLE     ","Mission Impossible"});
+	movieStack.push({'E',"19:30",35000,"AVANGER : END GAME     ","Avanger : End Game"});
+	movieStack.push({'D',"18:15",35000,"SPIDERMAN : NO WAY HOME","Spiderman : No Way Home"});
+	movieStack.push({'C',"20:30",20000,"HOME ALONE             ","Home Alone"});
+	movieStack.push({'B',"19:30",20000,"FROZEN                 ","Frozen"});
+	movieStack.push({'A',"18:15",20000,"KUNGFU PANDA           ","Kungfu Panda"});
+	
+	cout<<"\t========================================================================="<<endl;
+	cout<<"\t|\t\t\t\tDAFTAR FILM\t\t\t\t|"<<endl;
+	cout<<"\t|\t\t\tMinggu, 24 Desember 2023\t\t\t|"<<endl;
+	cout<<"\t========================================================================="<<endl<<endl;
+	cout<<"\t========================================================================="<<endl;
+	cout<<"\t| KODE |     	  NAMA FILM 	    |    JAM TAYANG     |  HARGA TIKET  |"<<endl;
+	cout<<"\t-------------------------------------------------------------------------"<<endl;
+	
+	while (!movieStack.empty()) {
+        Movie* currentMovie = &movieStack.top();
+        displayMovie(currentMovie);
+        movieStack.pop();
+    }
+    
+    cout<<"\t========================================================================="<<endl;
+    cout<<endl;
+	cout<<"\t"; system("pause"); system("cls");
+}
 
 //Convert huruf ke angka
 void huruf_angka(int *angka, char huruf){
@@ -141,7 +173,6 @@ void kursi(){
 							
 				//convert int ke string ke char
 				string tmp;
-				
 				stringstream ss; //int ke string
 				ss << j;
 				ss >> tmp;
@@ -168,7 +199,7 @@ void kursi(){
 void denah_kursi(){
 	cout<<endl<<endl;
 	cout<<"\t======================================================================================="<<endl;
-	cout<<"\t|				"<<setw(22)<<film[i].teks<<"				      |"<<endl;
+	cout<<"\t|				     "<<setw(22)<<film[i].judul<<"               	      |"<<endl;
 	cout<<"\t======================================================================================="<<endl;
 	cout<<endl;
 	
@@ -222,16 +253,28 @@ void pilih_kursi(){
 	cout<<"\tJumlah kursi yang dipesan	: "; cin>>beli[d].jumlah_tiket;
 	cout<<"\t------------------------------------"<<endl;
 	
-	for(int a=0; a < beli[d].jumlah_tiket; a++){
-		cout<<"\t  Pilih nomor kursi ke-"<<a+1<<"	: "; cin>>beli[d].nomor_kursi[a];
-		
-		//cek posisi indeks kursi
-		for(int b=0; b<kursi_max; b++){
-			if(film[i].kursi.data[b]==beli[d].nomor_kursi[a]){
-				film[i].kursi.urutan[b]=film[i].kursi.data[b];
-			}
-		}
-	}
+	for (int a = 0; a < beli[d].jumlah_tiket; a++) {
+        bool seatFound = false;
+
+        do {
+            cout << "\t  Pilih nomor kursi ke-" << a + 1 << "\t: ";
+            cin >> beli[d].nomor_kursi[a];
+
+            for (int b = 0; b < kursi_max; b++) {
+                if (film[i].kursi.data[b] == beli[d].nomor_kursi[a]) {
+                    film[i].kursi.urutan[b] = film[i].kursi.data[b];
+                    seatFound = true;
+                    break;
+                }
+            }
+
+            if (!seatFound) {
+                cout<<"\n\t  Peringatan: Nomor kursi "<<beli[d].nomor_kursi[a]<<" tidak valid."<<endl;
+                cout<<"\t  Silahkan Pilih Kursi yang tersedia\n"<<endl;
+            }
+
+        } while (!seatFound);
+    }
 	
 	cout<<endl<<endl;
 }
@@ -242,7 +285,6 @@ void struk_pembelian(){
 	cout<<endl<<"\t================================================="<<endl;
 	cout<<"\t|		 Struk Pembelian		|"<<endl;
 	cout<<"\t================================================="<<endl<<endl;
-	
 	cout<<"\tNama			: "<<beli[d].nama<<endl;
 	cout<<"\tJudul Film		: "<<beli[d].judul<<endl;
 	cout<<"\tHarga Tiket		: Rp "<<beli[d].harga_tiket<<endl;
@@ -256,7 +298,6 @@ void struk_pembelian(){
 		int b=0;
 		for(b=0; b<4; b++){
 			cout<<beli[d].nomor_kursi[k];
-			
 			if(k < beli[d].jumlah_tiket-1){
 				cout<<", ";
 			}
@@ -268,7 +309,7 @@ void struk_pembelian(){
 	while(k < beli[d].jumlah_tiket);
 	
 	cout<<endl;
-	cout<<"\tHari, Tanggal		: "<<"Minggu, 30 Jan 2022"<<endl;
+	cout<<"\tHari, Tanggal		: "<<"Minggu, 24 Desember 2023"<<endl;
 	cout<<"\tJam			: "<<beli[d].jam<<" WIB"<<endl;
 	cout<<endl;
 	cout<<"\tTotal harga		: Rp "<<beli[d].total_harga;
@@ -279,27 +320,122 @@ void struk_pembelian(){
 	cout<<"\t"; system("pause"); system("cls");
 }
 
+//Antrian Pembelian
+void queue_pembelian() {
+    cout<<endl<<"\t========================================================================="<<endl;
+	cout<<"\t|			 Antrian Pembelian Tiket			|"<<endl;
+	cout<<"\t========================================================================="<<endl<<endl;
+
+	if (!pembelian_queue.empty()) {
+	cout<<"\t========================================================================="<<endl;
+	cout<<"\t| NO. |	      NAMA PEMBELI	| KODE FILM | JML TIKET |     TOTAL	|"<<endl;
+	cout<<"\t-------------------------------------------------------------------------"<<endl;
+
+	int counter = 1;
+	    queue<data_pembelian> tempQueue = pembelian_queue;
+    
+    	//Menampilkan Queue
+		while (!tempQueue.empty()) {
+            data_pembelian purchase_data = tempQueue.front();
+            tempQueue.pop();
+		
+			cout << setiosflags(ios::left);
+    		cout << "\t| " << setw(4) << counter;
+    		cout << "| " << setw(24) << purchase_data.nama;
+    		cout << "|     " << setw(6) << purchase_data.kode;
+    		cout << "|     " << setw(6) << purchase_data.jumlah_tiket;
+    		cout << "| " << "Rp " << setw(11) << purchase_data.total_harga;
+    		cout << "|" << endl;
+			cout<<"\t-------------------------------------------------------------------------"<<endl;
+			counter++;
+		}
+		
+		char affirmation;
+		cout<<"\n\tLakukan Panggilan Antrian (Y/N) : ";cin>>affirmation;
+			if(affirmation=='Y'){
+				//Melakukan Pop Queue
+		        pembelian_queue.pop();
+		        cout<<"\n\tPanggilan Antrian Barhasil\n";
+			}else{
+				cout<<"\n\tPanggilan Antrian Dibatalkan\n";
+			}
+	}else{
+		cout << "\tAntrian Kosong" << endl;
+	}
+	
+	cout<<endl;
+	cout<<"\t"; system("pause"); system("cls");
+}
 
 //laporan riwayat penjualan
 void riwayat_penjualan(){
+	string temp;
+	int pilihan_pengurutan;
+	
 	cout<<endl<<"\t========================================================================="<<endl;
 	cout<<"\t|			 Riwayat Penjualan Tiket			|"<<endl;
 	cout<<"\t========================================================================="<<endl<<endl;
 	
-	cout<<"\t========================================================================="<<endl;
-	cout<<"\t| NO. |	      NAMA PEMBELI	| KODE FILM | JML TIKET |     TOTAL	|"<<endl;
-	cout<<"\t-------------------------------------------------------------------------"<<endl;
+	cout << "\t=========================================================================" << endl;
+    cout << "\t|             Pilihan Pengurutan Riwayat Penjualan            |" << endl;
+    cout << "\t=========================================================================" << endl;
+    cout << "\t|  1. Pilih berdasarkan total terbanyak                          |" << endl;
+    cout << "\t|  2. Pilih berdasarkan total sedikit                            |" << endl;
+    cout << "\t=========================================================================" << endl;
+    cout << "\tMasukkan pilihan (1-2): "; cin >> pilihan_pengurutan;
+    cout << endl;
+    
+ // Tambahkan logika pengurutan berdasarkan pilihan_pengurutan
+    switch(pilihan_pengurutan) {
+        case 1:
+        	
+        		cout<<"\t========================================================================="<<endl;
+				cout<<"\t| NO. |	      NAMA PEMBELI	| KODE FILM | JML TIKET |     TOTAL	|"<<endl;
+				cout<<"\t-------------------------------------------------------------------------"<<endl;
+            // Pengurutan berdasarkan total harga terbanyak (descending order)
+            for (int i = 0; i < d - 1; i++) {
+                for (int j = 0; j < d - i - 1; j++) {
+                    if (beli[j].total_harga < beli[j + 1].total_harga) {
+                        // Tukar elemen jika tidak sesuai urutan
+                        swap(beli[j], beli[j + 1]);
+                    }
+                }
+            }
+            break;
+        case 2:
+            // Pengurutan berdasarkan total harga terkecil (ascending order)
+            	cout<<"\t========================================================================="<<endl;
+				cout<<"\t| NO. |	      NAMA PEMBELI	| KODE FILM | JML TIKET |     TOTAL	|"<<endl;
+				cout<<"\t-------------------------------------------------------------------------"<<endl;
+            for (int i = 0; i < d - 1; i++) {
+                for (int j = 0; j < d - i - 1; j++) {
+                    if (beli[j].total_harga > beli[j + 1].total_harga) {
+                        // Tukar elemen jika tidak sesuai urutan
+                        swap(beli[j], beli[j + 1]);
+                    }
+                }
+            }
+            break;
+        default:
+            cout << "\tPilihan tidak valid." << endl;
+    }
+
 	
-	for(i=0; i<d; i++){
-		cout<<setiosflags(ios::left);
-		cout<<"\t| "<<setw(4)<<i+1;
-		cout<<"| "<<setw(24)<<beli[i].nama;
-		cout<<"|     "<<setw(6)<<beli[i].kode;
-		cout<<"|     "<<setw(6)<<beli[i].jumlah_tiket;
-		cout<<"| "<<"Rp "<<setw(11)<<beli[i].total_harga;
-		cout<<"|";
-		cout<<endl;
-	}
+	
+	 // Cetak ulang data setelah diurutkan
+    for (int i = 0; i < d; i++) {
+        cout << setiosflags(ios::left);
+        cout << "\t| " << setw(4) << i + 1;
+        cout << "| " << setw(24) << beli[i].nama;
+        cout << "|     " << setw(6) << beli[i].kode;
+        cout << "|     " << setw(6) << beli[i].jumlah_tiket;
+        cout << "| " << "Rp " << setw(11) << beli[i].total_harga;
+        cout << "|";
+        cout << endl;
+    }
+
+	
+	
 	
 	cout<<"\t-------------------------------------------------------------------------"<<endl;
 	cout<<"\t|		Total Penjualan		    ";
@@ -352,19 +488,38 @@ void penjualan_film(){
 
 //[0] HALAMAN UTAMA
 void hal_utama(){
+	
+	film[0].kode='A'; film[0].jam="18:15"; film[0].harga=20000; film[0].judul="KUNGFU PANDA"; 
+	film[1].kode='B'; film[1].jam="19:30"; film[1].harga=20000; film[1].judul="FROZEN";
+	film[2].kode='C'; film[2].jam="20:30"; film[2].harga=20000; film[2].judul="HOME ALONE";
+	film[3].kode='D'; film[3].jam="18:15"; film[3].harga=35000; film[3].judul="SPIDERMAN : NO WAY HOME";
+	film[4].kode='E'; film[4].jam="19:30"; film[4].harga=35000; film[4].judul="AVANGER : END GAME";
+	film[5].kode='F'; film[5].jam="20:30"; film[5].harga=35000; film[5].judul="MISSION IMPOSSIBLE";
+	
+	for(int i=0; i<6; i++){
+		if(i<3){
+			film[i].ruang="Cinema 1";
+		}
+		else if(i>=3 && i<6){
+			film[i].ruang="Cinema 2";
+		}
+	}
+	
 	cout<<endl<<"\t=================================================================="<<endl;
 	cout<<"\t|		Ticketing Bioskop Ambarukmo Plaza XXI		 |"<<endl;
 	cout<<"\t|	 Kota Yogyakarta, Daerah Istimewa Yogyakarta 55221	 |"<<endl;
 	cout<<"\t=================================================================="<<endl<<endl;
-	
-	cout<<"\tDaftar Menu"<<endl;
-	cout<<"\t------------------------------------"<<endl;
-	cout<<"\t  1. Pembelian Tiket"<<endl;
-	cout<<"\t  2. Cek Sisa Kursi"<<endl;
-	cout<<"\t  3. Laporan Penjualan Tiket"<<endl;
-	cout<<"\t  4. Keluar"<<endl;
+	cout<<"\t\t\t\t      Daftar Menu"<<endl;
+	cout<<"\t\t\t------------------------------------"<<endl;
+	cout<<"\t\t\t  1. Daftar Film"<<endl;
+	cout<<"\t\t\t  2. Pembelian Tiket"<<endl;
+	cout<<"\t\t\t  3. Cek Sisa Kursi"<<endl;
+	cout<<"\t\t\t  4. Antrian Pembelian Tiket"<<endl;
+	cout<<"\t\t\t  5. Laporan Riwayat Penjualan Tiket"<<endl;
+	cout<<"\t\t\t  6. Laporan Penjualan Tiket per Film"<<endl;
+	cout<<"\t\t\t  7. Keluar"<<endl;
 	cout<<endl;
-	cout<<"\tMasukkan pilihan (1-4)	: "; cin>>pilihan_menu;
+	cout<<"\t\t\tMasukkan pilihan (1-6)	: "; cin>>pilihan_menu;
 }
 
 //[1] HALAMAN PEMBELIAN
@@ -375,41 +530,21 @@ void pembelian(){
 	cout<<"\t|		 Pembelian Tiket		|"<<endl;
 	cout<<"\t================================================="<<endl<<endl;
 	
-	cout<<"\tNama			: "; gets(beli[d].nama);
+	cout<<"\tNama			: "; cin>>beli[d].nama;
 	cout<<endl;
 	cout<<"\t-------------------------------------------------"<<endl<<endl;
-	cout<<"\tJENIS TIKET"<<endl;
-	cout<<"\t  1. Anak-anak"<<"\tRp 20.000"<<endl;
-	cout<<"\t  2. Dewasa"<<"\tRp 35.000"<<endl;
+	cout<<"\tJadwal : Minggu, 24 Desember 2023"<<endl;
 	cout<<endl;
-	cout<<"\tMasukkan pilihan (1-2)	: "; cin>>pilihan_kategori;
-	cout<<endl;
-	cout<<"\t-------------------------------------------------"<<endl<<endl;
-	cout<<"\tJadwal : Minggu, 30 Jan 2022"<<endl;
-	cout<<endl;
-			
-	switch(pilihan_kategori){
-		case 1:
-			cout<<"\tDAFTAR FILM ANAK-ANAK"<<endl;
-			
-			for(i=0; i<3; i++){
-				cout<<"\t  ["<<film[i].kode<<"] "<<film[i].jam<<" WIB - "<<film[i].judul<<endl;
-			}
-			
-			cout<<endl;
-			cout<<"\tMasukkan pilihan (A-C)	: "; cin>>pilihan_film;
-			break;
-		case 2:
-			cout<<"\tDAFTAR FILM DEWASA"<<endl;
-			
-			for(i=3; i<6; i++){
-				cout<<"\t  ["<<film[i].kode<<"] "<<film[i].jam<<" WIB - "<<film[i].judul<<endl;
-			}
-			
-			cout<<endl;
-			cout<<"\tMasukkan pilihan (D-G)	: "; cin>>pilihan_film;
+	
+	cout<<"\t[DAFTAR FILM]\n"<<endl;
+	
+	for(int i=0; i<6; i++){
+		datafilm *filmptr = &film[i];
+		cout<<"\t["<<filmptr->kode<<"] "<<filmptr->jam<<" WIB - "<<filmptr->judul<<endl;
 	}
 	
+	cout<<endl;
+	cout<<"\tMasukkan pilihan (A-F)	: "; cin>>pilihan_film;
 	cout<<endl;
 	cout<<"\t-------------------------------------------------"<<endl;
 	
@@ -427,8 +562,6 @@ void pembelian(){
 			}
 			else{
 				pilih_kursi(); //pilih kursi
-				tumpuk.atas[i]++;
-				beli[d].jenis_tiket=pilihan_kategori;
 				beli[d].kode=film[i].kode;
 				beli[d].judul=film[i].judul;
 				beli[d].ruang=film[i].ruang;
@@ -445,6 +578,8 @@ void pembelian(){
 				film[i].total_pendapatan+=beli[d].total_harga;
 				total_tiket+=beli[d].jumlah_tiket;
 				total+=beli[d].total_harga;
+				
+				pembelian_queue.push(beli[d]);
 				
 				cout<<endl;
 				cout<<"\t================================================="<<endl<<endl;
@@ -498,30 +633,3 @@ void cek_kursi(){
 	cout<<endl;
 	cout<<"\t"; system("pause"); system("cls");
 }
-
-//[3] HALAMAN LAPORAN
-void laporan(){
-	cout<<endl<<"\t========================================================================="<<endl;
-	cout<<"\t|			  Laporan Penjualan Tiket			|"<<endl;
-	cout<<"\t========================================================================="<<endl<<endl;
-	
-	cout<<"\t  1. Riwayat Penjualan"<<endl;
-	cout<<"\t  2. Penjualan per Film"<<endl;
-	cout<<endl;
-	cout<<"\tMasukkan pilihan (1-2)	: "; cin>>pilihan_laporan;
-	cout<<endl;
-	cout<<"\t-------------------------------------------------"<<endl<<endl;
-	
-	switch(pilihan_laporan){
-		case 1:
-			system("cls");
-			riwayat_penjualan();
-			break;
-		case 2:
-			system("cls");
-			penjualan_film();
-			break;
-	}
-}
-
-
